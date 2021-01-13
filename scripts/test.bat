@@ -1,3 +1,2 @@
-@echo off
-echo hello world
-pause
+#!/bin/bash
+echo"hello world"

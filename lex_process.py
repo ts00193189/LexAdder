@@ -82,7 +82,7 @@ class KaldiLexiconHandler():
         #DETACHED_PROCESS = 0x00000008
         #subprocess.Popen(['notepad'], shell=True, close_fds=True, creationflags=DETACHED_PROCESS)
         try:
-            ret = subprocess.run('test.sh')
+            ret = subprocess.run('test01.bat')
             return ret.returncode
         except OSError:
             print("Can not execue script")

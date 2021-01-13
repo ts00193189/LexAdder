@@ -1,14 +1,15 @@
 import time
 import os
-
+import sys
 
 from flask import Flask, render_template, request, jsonify, url_for
 from celery import Celery, result
+import subprocess
 
 from lex_process import KaldiLexiconHandler
 
 LEX_PATH = 'lexicon.txt'
-SCRIPT_PATH = 'D:\PycharmProjects\flask-kaldi\scripts\test.bat'
+KALDI_SCRIPT = ''
 
 lex_handler = KaldiLexiconHandler(LEX_PATH)
 
@@ -25,7 +26,31 @@ celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'], backend=app.co
 
 @celery.task(bind=True)
 def compile_hclg(self):
-    self.update_state()
+
+    scripts = ['test01.bat', 'test02.bat', 'test03.bat']
+    error_res = {'Stage': 'Execute Fail',
+                'Total': 5}
+
+    for i, script in enumerate(scripts):
+        try:
+            ret = subprocess.run(script)
+            if ret.returncode == 0:
+                self.update_state(state='PROGESS',
+                                      meta={'Stage': i+1, 'Total': 5,
+                                            'Status': 'Finish {}/5 stage'.format(i)})
+            else:
+                print('{} is executed but something go wrong'.format(script))
+                error_res['Status'] = '{} is executed but something go wrong'.format(script)
+                return error_res
+        except:
+            print('Unexcepted error, fail in {}'.format(script))
+            error_res['Status'] = 'unexcepted error, fail in {}'.format(script)
+            return error_res
+        #time.sleep(5)
+
+    return {'Stage': 5, 'Total': 5,
+            'Status': 'All done!'}
+
 
 @app.route('/')
 def home(): #  home page
@@ -106,7 +131,7 @@ def task_status(task_id):
     if task.state == 'PENDING':
         response = {
             'state': task.state,
-            'status':'Pending...'
+            'Status':'Pending...'
         }
     elif task.state != 'FAILURE':
         response = {
@@ -114,15 +139,15 @@ def task_status(task_id):
             'Stage': task.info.get('Stage', 0),
             'Total': task.info.get('Total', 1),
 
-            'status': task.info.get('status', '')
+            'Status': task.info.get('Status', '')
         }
-    else:
+    else: # state == FAILURE
         response = {
             'state': task.state,
-            'Stage': 1,
-            'Total': 1,
+            'Stage': 'Task fail',
+            'Total': 5,
 
-            'status': str(task.info)
+            'Status': str(task.info)
         }
     return jsonify(response)
 

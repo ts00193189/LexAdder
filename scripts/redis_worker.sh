@@ -1,1 +1,1 @@
-celery -A main.celery worker -E --loglevel=info
+celery -A main.celery worker --loglevel=info -P gevent
