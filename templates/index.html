@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}辭典增詞{% endblock %}
+
+{% block main %}
+<p>
+    辭典增詞<br>
+    請輸入添加字詞及選擇語言
+    <form method="post" action="/add"> <!-- method 及 request的route-->
+            <label><input type="radio" name="lang" value="zh" required>中文</label>
+            <label><input type="radio" name="lang" value="en">英文</label><br>
+            字詞：<input name="input" rows="10" cols="50"  placeholder="在此輸入字詞" required><br>
+            <input type="submit" value="加入字典">
+        <button id="start-compile">更新字典</button>
+    </form>
+</p>
+{% endblock %}
+
+{% block div %}
+
+{{ result }}
+
+{% endblock %}
+
