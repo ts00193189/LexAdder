@@ -8,8 +8,8 @@ import subprocess
 
 from lex_process import KaldiLexiconHandler
 
+
 LEX_PATH = 'lexicon.txt'
-KALDI_SCRIPT = ''
 
 lex_handler = KaldiLexiconHandler(LEX_PATH)
 
@@ -27,7 +27,10 @@ celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'], backend=app.co
 @celery.task(bind=True)
 def compile_hclg(self):
 
-    scripts = ['test01.bat', 'test02.bat', 'test03.bat']
+    scripts = ['scripts/prepare_lex.sh',
+     'scripts/prepare_phone.sh',
+     'scripts/compile_LG.sh',
+     'scripts/compile_graph.sh']
     error_res = {'Stage': 'Execute Fail',
                 'Total': 5}
 
@@ -79,9 +82,6 @@ def add_words():
 
                 # Update lexicon vars
                 lex_handler.add_lexicon(input_word, prons)
-
-                # Call kaldi script
-                #lex_handler.recompile_hclg(SCRIPT_PATH)
 
                 return render_template('index.html', result='字詞加入成功')
             else:

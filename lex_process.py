@@ -75,19 +75,3 @@ class KaldiLexiconHandler():
     def generate_prons(self, word):
         prons = self.generator.漢語拼音(word)
         return prons
-
-
-    def recompile_hclg(self, SCRIPT_PATH):  # call kaldi script to recompile hclg
-        #ret = subprocess.run(SCRIPT_PATH)
-        #DETACHED_PROCESS = 0x00000008
-        #subprocess.Popen(['notepad'], shell=True, close_fds=True, creationflags=DETACHED_PROCESS)
-        try:
-            ret = subprocess.run('test01.bat')
-            return ret.returncode
-        except OSError:
-            print("Can not execue script")
-            return 1
-        except:
-            print("Something go wrong:", sys.exc_info()[0])
-            return 1
-
