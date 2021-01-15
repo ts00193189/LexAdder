@@ -7,7 +7,7 @@ from celery import Celery, result
 import subprocess
 
 from lex_process import KaldiLexiconHandler
-
+#from celery_queue.worker import compile_hclg
 
 LEX_PATH = 'lexicon.txt'
 
@@ -25,22 +25,23 @@ celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'], backend=app.co
 #celery.conf.update(app.config)
 
 @celery.task(bind=True)
-def compile_hclg(self):
+def compile_hclg(self): # call kaldi script
+
 
     scripts = ['scripts/prepare_lex.sh',
      'scripts/prepare_phone.sh',
      'scripts/compile_LG.sh',
      'scripts/compile_graph.sh']
     error_res = {'Stage': 'Execute Fail',
-                'Total': 5}
+                'Total': len(scripts)}
 
     for i, script in enumerate(scripts):
         try:
             ret = subprocess.run(script)
             if ret.returncode == 0:
                 self.update_state(state='PROGESS',
-                                      meta={'Stage': i+1, 'Total': 5,
-                                            'Status': 'Finish {}/5 stage'.format(i)})
+                                      meta={'Stage': i+1, 'Total': len(scripts),
+                                            'Status': 'Finish {}/{} stage'.format(i+1, len(scripts))})
             else:
                 print('{} is executed but something go wrong'.format(script))
                 error_res['Status'] = '{} is executed but something go wrong'.format(script)
@@ -49,10 +50,10 @@ def compile_hclg(self):
             print('Unexcepted error, fail in {}'.format(script))
             error_res['Status'] = 'unexcepted error, fail in {}'.format(script)
             return error_res
-        #time.sleep(5)
 
-    return {'Stage': 5, 'Total': 5,
+    return {'Stage': len(scripts), 'Total': len(scripts),
             'Status': 'All done!'}
+
 
 
 @app.route('/')
@@ -117,12 +118,8 @@ def update_word():
 
 @app.route('/compile', methods=['POST', 'GET'])
 def compile_lexicon():
-    task = compile_hclg.apply_async()
-    #res = compile_hclg.AsyncResult(task.id)
 
-    #print(task.state)
-    #print(task.get())
-    #return jsonify({'message':'已接收請求！'}), 202
+    task = compile_hclg.apply_async()
     return jsonify({'message':'已接收請求！'}), 202, {'Location': url_for('task_status', task_id=task.id)}
 
 @app.route('/status/<task_id>')
@@ -152,6 +149,5 @@ def task_status(task_id):
     return jsonify(response)
 
 if __name__ == '__main__':
-    '''global lexicon
-    lexicon = build_lexicon()'''
+
     app.run(host='127.0.0.1', port=5000, debug=True) # Set debug mode when developing
