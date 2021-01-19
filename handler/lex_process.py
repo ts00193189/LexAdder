@@ -37,6 +37,7 @@ class KaldiLexiconHandler():
 
 
     def load_lexicon(self, LEX_PATH):
+        ''' Load lexicon.txt to lexicon(dict) '''
         lexicon = {}
         with open(LEX_PATH, 'r', encoding='utf-8') as lex:
             for line in lex:
@@ -49,11 +50,13 @@ class KaldiLexiconHandler():
 
 
     def write_lexicon(self, w_lexicon, word, prons):
+        ''' Write new word and prons to lexicon.txt '''
         with open(w_lexicon, 'a', encoding='utf-8') as lex:
             lex.write('{} {}\n'.format(word, prons))
 
 
     def add_lexicon(self, word, prons):
+        ''' Add word to lexicon  '''
         if not self.isexisted(word):
             self.lexicon[word] = [prons]
         else:
@@ -61,6 +64,7 @@ class KaldiLexiconHandler():
 
 
     def isexisted(self, word):
+        ''' Check word is existed or not'''
         if word in self.lexicon:
             return True
         else:
@@ -68,10 +72,12 @@ class KaldiLexiconHandler():
 
 
     def build_prons_generator(self):
+        ''' Build prons generator '''
         generator = prons_generator(self.lexicon)
         return generator
 
 
     def generate_prons(self, word):
+        ''' Generate pinyin '''
         prons = self.generator.漢語拼音(word)
         return prons
