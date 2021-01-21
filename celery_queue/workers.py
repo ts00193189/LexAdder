@@ -9,6 +9,7 @@ CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379'
 celery = Celery('tasks', broker=CELERY_BROKER_URL, backend=CELERY_RESULT_BACKEND)
 #celery.conf.update(app.config)
 
+
 @celery.task(bind=True)
 def compile_hclg(self):
     ''' Call kaldi script '''

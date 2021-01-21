@@ -1,20 +1,19 @@
-import subprocess
-import sys
+import json
+
+import pronouncing
+
 
 class prons_generator():
     # lexicon is a dict(key:[prons1, prons2, ... ]) struct
     def __init__(self, lexicon):
         self.d = lexicon
+        self.phone_table = self.load_phone_table()
         #self.d = {key: lexicon[key][0] for key in lexicon}
         '''with open('lexicon.txt', 'r',encoding='utf-8') as f:
             self.l = [i.split() for i in f.readlines()]
             self.d = {i[0]: i[1:] for i in self.l}
             print(self.d)'''
 
-    '''def 注音拼音(s):
-        l = pypinyin.pinyin(s, pypinyin.BOPOMOFO)
-        f = lambda i: ''.join(i).strip() != ''
-        return ' '.join(' '.join(i) for i in filter(f, l))'''
 
     def 漢語拼音(self, s):
         '''l = [self.d.get(c, []) for c in s]
@@ -22,12 +21,47 @@ class prons_generator():
         return ' '.join(' '.join(i) for i in filter(f, l))'''
 
         # Get character's prons in input word
-        #l = [self.d.get(c, []) for c in s]
-        l = [self.d[c][0] for c in s]
+        l = []
+        for c in s:
+            phone = self.d.get(c, [])
+            if phone:
+                l.append(phone[0])
+            else:
+                return []
 
-        # Fliter: if prons are not empty, ouput it
-        f = lambda i: i.strip() != ''
-        return ' '.join(i for i in filter(f, l))
+        return ' '.join(l)
+
+    def english_pinyin(self, word):
+        ''' Generate english word pinyin for lexicon.txt '''
+
+        # Generate CMU dict's phone
+        cmu_phones = pronouncing.phones_for_word(word)
+        if not cmu_phones:
+            return []
+
+        # Transform
+        xsampa_phones = self.cmu_to_xsampa(cmu_phones[0])
+
+        return xsampa_phones
+
+
+    def cmu_to_xsampa(self, cmu_phones):
+        ''' Transform CMU dict's phone to X-SAMPA(with a little customize) phone '''
+
+        xsampa_phones = []
+        for cmu_phone in cmu_phones.split():
+            xsampa_phone = self.phone_table[cmu_phone]
+            xsampa_phones.append(xsampa_phone)
+        return ' '.join(xsampa_phones)
+
+
+    def load_phone_table(self):
+        ''' Load phone table for transform '''
+
+        dict_table = {}
+        with open('phone_table.json', 'r', encoding='utf-8') as js:
+            dict_table = json.load(js)
+        return dict_table
 
 
 class KaldiLexiconHandler():
@@ -77,7 +111,10 @@ class KaldiLexiconHandler():
         return generator
 
 
-    def generate_prons(self, word):
+    def generate_prons(self, word, lang):
         ''' Generate pinyin '''
-        prons = self.generator.漢語拼音(word)
+        if lang == 'zh':
+            prons = self.generator.漢語拼音(word)
+        elif lang == 'en':
+            prons = self.generator.english_pinyin(word)
         return prons

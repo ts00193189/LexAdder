@@ -1,3 +1,6 @@
+import argparse
+import re
+
 from flask import Flask, render_template, request, jsonify, url_for
 
 from handler.lex_process import KaldiLexiconHandler
@@ -17,8 +20,26 @@ def home(): #  home page
 
 
 def is_valid_input(input_word, lang): #check input and lang
-    return True
+    # Empty
+    if not input_word:
+        return False
 
+    # Check space
+    if input_word != ''.join(input_word.split()):
+        return False
+
+    # Check lang
+    if lang == 'zh':
+        patten = re.compile(u'[\u4e00-\u9fff]+')
+        if not re.match(patten, input_word):
+            return False
+    elif lang == 'en':
+        patten = re.compile(r'[a-zA-Z]+')
+        if not re.fullmatch(patten, input_word):
+            return False
+    else:
+        return False
+    return True
 
 @app.route('/add', methods=['POST'])
 def add_words():
@@ -26,27 +47,25 @@ def add_words():
     input_word = request.form['input']
 
     if is_valid_input(input_word, lang):
-        #lex_table = build_lexicon()
-        if lang == 'zh':
-            if not lex_handler.isexisted(input_word):
+        if not lex_handler.isexisted(input_word):
+            # Generate prons
+            prons = lex_handler.generate_prons(input_word, lang)
 
-                # Generate prons
-                prons = lex_handler.generate_prons(input_word)
+            # Check if prons empty
+            if not prons:
+                return render_template('index.html', result='無法產生拼音！')
 
-                # Write lexicon.txt
-                lex_handler.write_lexicon(LEX_PATH, input_word, prons)
+            # Write lexicon.txt
+            lex_handler.write_lexicon(LEX_PATH, input_word, prons)
 
-                # Update lexicon vars
-                lex_handler.add_lexicon(input_word, prons)
+            # Update lexicon vars
+            lex_handler.add_lexicon(input_word, prons)
 
-                return render_template('index.html', result='字詞加入成功！')
-            else:
-                return render_template('index.html', result='字詞已存在！')
-        elif request.form['lang'] == 'en':
-            return 'Not implement'
+            return render_template('index.html', result='字詞加入成功！')
+        else:
+            return render_template('index.html', result='字詞已存在！')
     else:
-        return render_template('index.html', result='字詞與選擇語言不符！')
-        #return jsonify({'message': '字詞與選擇語言不符！'})
+        return render_template('index.html', result='字詞含不當字元或語言不符！')
 
 @app.route('/delete')
 def delete_words():
@@ -91,7 +110,6 @@ def task_status(task_id):
             'state': task.state,
             'Stage': task.info.get('Stage', 0),
             'Total': task.info.get('Total', 1),
-
             'Status': task.info.get('Status', '')
         }
     else: # state == FAILURE
@@ -99,11 +117,15 @@ def task_status(task_id):
             'state': task.state,
             'Stage': 'Task fail',
             'Total': 4,
-
             'Status': str(task.info)
         }
     return jsonify(response)
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Simple Lexadder flask service')
+    parser.add_argument('-host', help='Set host ip', dest='host', default='127.0.0.1')
+    parser.add_argument('-port', help='Set port number', dest='port', default=5000, type=int)
 
-    app.run(host='127.0.0.1', port=5000, debug=True) # Set debug mode when developing
+    args = parser.parse_args()
+
+    app.run(host=args.host, port=args.port, debug=True) # Set debug mode when developing

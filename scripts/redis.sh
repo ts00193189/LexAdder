@@ -1,1 +1,1 @@
-redis-server.exe
+redis-server
