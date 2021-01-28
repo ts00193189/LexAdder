@@ -3,30 +3,16 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!--<link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">-->
 
     <title>{% block title %}{% endblock %}</title>
 </head>
 <body>
     <script src="//cdnjs.cloudflare.com/ajax/libs/nanobar/0.2.1/nanobar.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
-    <!--<script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>-->
-    <!--<nav class="navbar navbar-expand-sm bg-light navbar-light">
-        <ul class="navbar-nav">
-            <li class="nav-item">
-              <a class="nav-link" href="#">Link 1</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">Link 2</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">Link 3</a>
-            </li>
-        </ul>
-    </nav>-->
+    <script src="{{ url_for('static', filename='js/request.js') }}"></script>
     <div>
         <h1>語音辨識-辭典修改</h1>
-        <img  src="static/img/logo.png">
+        <img  src="{{ url_for('static', filename='img/logo.png') }}">
         <hr>
         <main>
             {% block main %}{% endblock %}
@@ -37,50 +23,8 @@
     </div>
     <div id="result">
         <script>
-            function compile() {
-
-                 $.ajax({
-                    type: 'POST',
-                    url: '/compile',
-                    success: function(data, status, request) {
-                        status_url = request.getResponseHeader('Location');
-                        get_task_state(status_url);
-                        message = data['message'];
-                        alert(message);
-                        $('#start-compile').attr("disabled", true)
-                        //alert(status_url);
-                    },
-                    error: function() {
-                        alert('Unexpected error');
-                    }
-                 });
-
-            }
-            function get_task_state(status_url) {
-                $.getJSON(status_url, function(data) {
-                    // task not finish
-                    if ( data['state'] == 'PENDING' || data['state'] == 'PROGESS' ){
-                        $('#task_message').text(data['Status']);
-                        setTimeout(function() {
-                            get_task_state(status_url);
-                        }, 2000);
-                    }
-                    // task finish (FAILURE or SUCCESS or others...)
-                    else {
-                        if ( data['Status'] != 'All done!' ) {
-                            $('#task_message').text('Something go wrong: ' + data['Status']);
-
-                        }
-                        else {
-                            $('#task_message').text(data['Status']);
-                        }
-                        $('#start-compile').attr("disabled", false)
-                    }
-                });
-            }
-
             $(function() {
-                $('#start-compile').click(compile);
+                $('#start-compile').click(compile_button);
             });
         </script>
         <div id="task_message">

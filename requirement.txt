@@ -6,6 +6,7 @@ click==7.1.2
 click-didyoumean==0.0.3
 click-plugins==1.1.1
 click-repl==0.1.6
+cmudict==0.4.5
 dnspython==1.16.0
 Flask==1.1.2
 gevent==20.12.1
@@ -15,6 +16,7 @@ Jinja2==2.11.2
 kombu==5.0.2
 MarkupSafe==1.1.1
 prompt-toolkit==3.0.10
+pronouncing==0.2.0
 pycparser==2.20
 pypinyin==0.40.0
 pytz==2020.5

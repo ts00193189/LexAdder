@@ -12,14 +12,27 @@ lex_handler = KaldiLexiconHandler(LEX_PATH)
 
 ''' Flask '''
 app = Flask(__name__)
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+
+
+'''  Disable Cache  '''
+@app.after_request
+def add_header(response):
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Expires'] = '0'
+    response.cache_control.public = True
+    response.cache_control.max_age = 0
+
+    return response
 
 
 @app.route('/')
-def home(): #  home page
-    return render_template('index.html') # return html file
+def home():  # home page
+    return render_template('index.html')  # return html file
 
 
-def is_valid_input(input_word, lang): #check input and lang
+def is_valid_input(input_word, lang):  # check input and lang
     # Empty
     if not input_word:
         return False
@@ -40,6 +53,7 @@ def is_valid_input(input_word, lang): #check input and lang
     else:
         return False
     return True
+
 
 @app.route('/add', methods=['POST'])
 def add_words():
@@ -67,23 +81,15 @@ def add_words():
     else:
         return render_template('index.html', result='字詞含不當字元或語言不符！')
 
+
 @app.route('/delete')
 def delete_words():
     pass
 
 
-@app.route('/search', methods=['POST', 'GET'])
+@app.route('/search')
 def search_word():
-   ''' target = request.form['input']
-    lex_table = build_lexicon()
-
-    if target in lex_table:
-        print('{} {}'.format(target, lex_table[target]))
-        return render_template('index.html', result={target:lex_table[target]})
-    else:
-        print('字詞不存在')
-        return render_template('index.html', result='字詞不存在')'''
-   pass
+    pass
 
 
 @app.route('/update')
@@ -91,11 +97,11 @@ def update_word():
     pass
 
 
-@app.route('/compile', methods=['POST', 'GET'])
+@app.route('/compile', methods=['POST'])
 def compile_lexicon():
-
     task = compile_hclg.apply_async()
-    return jsonify({'message':'已接收請求！'}), 202, {'Location': url_for('task_status', task_id=task.id)}
+    return jsonify({'message': '已接收請求！', 'Location': url_for('task_status', task_id=task.id)}), 202
+
 
 @app.route('/status/<task_id>')
 def task_status(task_id):
@@ -103,7 +109,7 @@ def task_status(task_id):
     if task.state == 'PENDING':
         response = {
             'state': task.state,
-            'Status':'Pending...'
+            'Status': 'Pending...'
         }
     elif task.state != 'FAILURE':
         response = {
@@ -112,7 +118,7 @@ def task_status(task_id):
             'Total': task.info.get('Total', 1),
             'Status': task.info.get('Status', '')
         }
-    else: # state == FAILURE
+    else:  # state == FAILURE
         response = {
             'state': task.state,
             'Stage': 'Task fail',
@@ -121,6 +127,7 @@ def task_status(task_id):
         }
     return jsonify(response)
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Simple Lexadder flask service')
     parser.add_argument('-host', help='Set host ip', dest='host', default='127.0.0.1')
@@ -128,4 +135,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    app.run(host=args.host, port=args.port, debug=True) # Set debug mode when developing
+    app.run(host=args.host, port=args.port, debug=True)  # Set debug mode when developing
