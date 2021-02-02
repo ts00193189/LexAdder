@@ -6,12 +6,20 @@
 <div>
     辭典增詞<br>
     請輸入添加字詞及選擇語言
-    <form method="post" action="/add"> <!-- method 及 request的route-->
+    <form method="post" action="/add" id="input_form"> <!-- method 及 request的route-->
             <label><input type="radio" name="lang" value="zh" required>中文</label>
-            <label><input type="radio" name="lang" value="en">英文</label><br>
+            <label><input type="radio" name="lang" value="en" >英文</label><br>
             字詞：<input name="input" placeholder="在此輸入字詞" required><br><br>
             <input type="submit" value="加入字典" id="add-word">
             <input type="button" value="更新字典" id="start-compile">
+    </form>
+    <br>
+    <form method="post" action="/add" id="input_file" enctype="multipart/form-data">
+        或選擇字詞檔案(txt)<br>
+        <label><input type="radio" name="lang" value="zh" required>中文</label>
+        <label><input type="radio" name="lang" value="en" >英文</label><br>
+        <input type="file" name="words" required><br>
+        <input type="submit" valie="送出" id="add-words">
     </form>
 
 </div>

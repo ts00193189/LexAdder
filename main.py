@@ -1,18 +1,23 @@
 import argparse
 import re
+import os
 
 from flask import Flask, render_template, request, jsonify, url_for
+from werkzeug.utils import secure_filename
 
 from handler.lex_process import KaldiLexiconHandler
 from celery_queue.workers import compile_hclg
 
 LEX_PATH = 'lexicon.txt'
+UPLOAD_FOLDER = './uploads'
+ALLOWED_EXTENSIONS = ("txt")
 
 lex_handler = KaldiLexiconHandler(LEX_PATH)
 
 ''' Flask '''
 app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 
 '''  Disable Cache  '''
@@ -44,7 +49,7 @@ def is_valid_input(input_word, lang):  # check input and lang
     # Check lang
     if lang == 'zh':
         patten = re.compile(u'[\u4e00-\u9fff]+')
-        if not re.match(patten, input_word):
+        if not re.search(patten, input_word):
             return False
     elif lang == 'en':
         patten = re.compile(r'[a-zA-Z]+')
@@ -55,11 +60,11 @@ def is_valid_input(input_word, lang):  # check input and lang
     return True
 
 
-@app.route('/add', methods=['POST'])
-def add_words():
-    lang = request.form['lang']
-    input_word = request.form['input']
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def add_word(input_word, lang):
     if is_valid_input(input_word, lang):
         if not lex_handler.isexisted(input_word):
             # Generate prons
@@ -67,7 +72,7 @@ def add_words():
 
             # Check if prons empty
             if not prons:
-                return render_template('index.html', result='無法產生拼音！')
+                return False, '無法產生拼音！'
 
             # Write lexicon.txt
             lex_handler.write_lexicon(LEX_PATH, input_word, prons)
@@ -75,11 +80,52 @@ def add_words():
             # Update lexicon vars
             lex_handler.add_lexicon(input_word, prons)
 
-            return render_template('index.html', result='字詞加入成功！')
+            return True, '字詞加入成功！'
         else:
-            return render_template('index.html', result='字詞已存在！')
+            return False, '字詞已存在!'
     else:
-        return render_template('index.html', result='字詞含不當字元或語言不符！')
+        return False, '字詞包含不當字元或為空！'
+
+@app.route('/add', methods=['POST'])
+def add_words():
+    lang = request.form['lang']
+    ignore = {}
+
+    if 'words' in request.files:
+        # Get file
+        file = request.files['words']
+
+        # Check file type
+        if not allowed_file(file.filename):
+            return render_template('index.html', result='非允許檔案類型！')
+
+        # Clear filename
+        filename = secure_filename(file.filename)
+
+        # Save file
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+
+        # Generate prons
+        for line in open(file_path, 'r', encoding='utf-8'):
+            input_word = line.replace('\n', '')
+            success, msg = add_word(input_word, lang)
+            if not success:
+                ignore[input_word] = msg
+
+        # Write the skip words and msg
+        if ignore:
+            with open('log_ignore.txt', 'a', encoding='utf-8') as f:
+                for key in ignore.keys():
+                   f.write('{}:{}\n'.format(key, ignore[key]))
+            return render_template('index.html', result='部分字詞未能加入！')
+
+        return render_template('index.html', result='全部字詞加入成功！')
+
+    else:
+        input_word = request.form['input']
+        success, msg = add_word(input_word, lang)
+        return render_template('index.html', result=msg)
 
 
 @app.route('/delete')
